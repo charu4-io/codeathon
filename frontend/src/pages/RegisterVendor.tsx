@@ -1,101 +1,103 @@
-import { useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-interface VendorForm {
-  name: string;
-  category: string;
-  location: string;
-  is_female_owned: boolean;
-  image_url: string;
-}
-
-function RegisterVendor() {
+const Register: React.FC = () => {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState<VendorForm>({
+  const [formData, setFormData] = useState({
     name: "",
-    category: "",
-    location: "",
-    is_female_owned: false,
-    image_url: "",
+    gender: "",
+    email: "",
+    vendor_type: "",
+    cart_type: "",
+    password: "",
+    confirm_password: "",
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value, type, checked } = e.target;
-
-    setForm({
-      ...form,
-      [name]:
-        type === "checkbox" ? checked : value,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    axios
-      .post("http://127.0.0.1:8000/api/register-vendor/", form)
-      .then(() => {
-        alert("Vendor Registered Successfully!");
-        navigate("/discover");
-      })
-      .catch((err: unknown) => console.error(err));
+    if (formData.password !== formData.confirm_password) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/vendor/register/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Vendor registered successfully!");
+        navigate("/vendor");
+      } else {
+        alert(JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
+    }
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h1>Register as Vendor</h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#f6d7bb]">
+      <div className="w-[380px] bg-white rounded-2xl shadow-lg px-7 py-8">
 
-      <form onSubmit={handleSubmit}>
-        <input
-          name="name"
-          placeholder="Vendor Name"
-          onChange={handleChange}
-          required
-        />
-        <br />
-        <br />
+        {/* Heading */}
+        <h2 className="text-center text-xl font-semibold mb-6 border-b pb-2">
+          Vendor Registration
+        </h2>
 
-        <input
-          name="category"
-          placeholder="Category (food, flower, etc)"
-          onChange={handleChange}
-          required
-        />
-        <br />
-        <br />
+        {/* Form */}
+        <form className="space-y-4 text-sm">
 
-        <input
-          name="location"
-          placeholder="Location"
-          onChange={handleChange}
-          required
-        />
-        <br />
-        <br />
+          {[
+            "Name",
+            "Gender",
+            "E-mail",
+            "Vendor Type",
+            "Cart Type",
+            "Password",
+            "Confirm Password",
+          ].map((label) => (
+            <div key={label}>
+              <label className="block mb-1 text-gray-700">
+                {label}
+              </label>
+              <input
+                type={label.toLowerCase().includes("password") ? "password" : "text"}
+                placeholder={`Enter ${label}`}
+                className="w-full bg-gray-100 rounded-lg px-3 py-2
+                outline-none focus:ring-2 focus:ring-orange-400 transition"
+              />
+            </div>
+          ))}
 
-        <label>
-          <input
-            type="checkbox"
-            name="is_female_owned"
-            onChange={handleChange}
-          />
-          Women Owned
-        </label>
-        <br />
-        <br />
+          {/* Button */}
+          <button
+            type="button"
+            className="w-full mt-5 bg-orange-500 hover:bg-orange-600 
+            text-white font-medium py-3 rounded-lg transition"
+          >
+            Register
+          </button>
 
-        <button type="submit">
-          Register
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
-}
+};
 
-export default RegisterVendor;
+export default Register;
