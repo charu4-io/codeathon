@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Vendor
-from .serializers import VendorSerializer
+from .serializers import VendorSerializer, VendorRegistrationSerializer
 
 
 @api_view(['GET'])
@@ -43,3 +43,37 @@ def rate_vendor(request, vendor_id):
     })
 
 
+@api_view(['POST'])
+def register_vendor(request):
+    serializer = VendorRegistrationSerializer(data=request.data)
+
+    if serializer.is_valid():
+        vendor = serializer.save()
+        return Response({
+            "message": "Vendor registered successfully",
+            "vendor_id": vendor.id
+        }, status=201)
+
+    return Response(serializer.errors, status=400)
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Vendor
+from .serializers import VendorSerializer
+from django.utils import timezone
+
+
+@api_view(['GET'])
+def get_vendors(request):
+    vendors = Vendor.objects.all()
+
+    serializer = VendorSerializer(vendors, many=True)
+    data = serializer.data
+
+    # Sort by final_score descending
+    sorted_data = sorted(data, key=lambda x: x["final_score"], reverse=True)
+
+    return Response({
+        "success": True,
+        "data": sorted_data
+    })

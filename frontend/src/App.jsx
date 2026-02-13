@@ -1,8 +1,13 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Discover from "./pages/Discover";
+
 function App() {
   return (
-    <div className="h-screen flex items-center justify-center bg-black text-white text-3xl">
-      Tailwind is working 🚀
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Discover />} />
+      </Routes>
+    </Router>
   );
 }
 
