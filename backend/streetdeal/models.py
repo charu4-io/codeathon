@@ -8,7 +8,9 @@ class StreetDeal(models.Model):
     vendor = models.ForeignKey(
         Vendor,
         on_delete=models.CASCADE,
-        related_name="deals"
+        related_name="deals",
+        null=True,
+        blank=True
     )
 
     discount = models.IntegerField()
@@ -19,7 +21,6 @@ class StreetDeal(models.Model):
     expiry_time = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Auto-set expiry to 1 hour if not set
         if not self.expiry_time:
             self.expiry_time = timezone.now() + timedelta(hours=1)
         super().save(*args, **kwargs)
@@ -30,4 +31,4 @@ class StreetDeal(models.Model):
             super().save()
 
     def __str__(self):
-        return f"{self.vendor.name} - {self.discount}%"
+        return f"{self.vendor.name if self.vendor else 'No Vendor'} - {self.discount}%"

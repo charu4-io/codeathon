@@ -2,14 +2,43 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Vendor
 from .serializers import VendorSerializer, VendorRegistrationSerializer
+from django.utils import timezone
 
 
+# ---------------------------
+# GET ALL VENDORS (Sorted)
+# ---------------------------
 @api_view(['GET'])
 def get_vendors(request):
     vendors = Vendor.objects.all()
     serializer = VendorSerializer(vendors, many=True)
-    return Response(serializer.data)
+    data = serializer.data
 
+    # Sort by final_score descending
+    sorted_data = sorted(data, key=lambda x: x["final_score"], reverse=True)
+
+    return Response({
+        "success": True,
+        "data": sorted_data
+    })
+
+
+# ---------------------------
+# GET SINGLE VENDOR DETAIL
+# ---------------------------
+@api_view(['GET'])
+def get_vendor_detail(request, id):
+    try:
+        vendor = Vendor.objects.get(id=id)
+        serializer = VendorSerializer(vendor)
+        return Response(serializer.data)
+    except Vendor.DoesNotExist:
+        return Response({"error": "Vendor not found"}, status=404)
+
+
+# ---------------------------
+# RATE VENDOR
+# ---------------------------
 @api_view(['POST'])
 def rate_vendor(request, vendor_id):
     try:
@@ -43,37 +72,91 @@ def rate_vendor(request, vendor_id):
     })
 
 
+# ---------------------------
+# REGISTER VENDOR
+# ---------------------------
 @api_view(['POST'])
 def register_vendor(request):
     serializer = VendorRegistrationSerializer(data=request.data)
-
     if serializer.is_valid():
         vendor = serializer.save()
         return Response({
             "message": "Vendor registered successfully",
             "vendor_id": vendor.id
         }, status=201)
-
     return Response(serializer.errors, status=400)
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .models import Vendor
-from .serializers import VendorSerializer
-from django.utils import timezone
 
-
+# ---------------------------
+# DASHBOARD VIEW
+# ---------------------------
 @api_view(['GET'])
-def get_vendors(request):
-    vendors = Vendor.objects.all()
+def vendor_dashboard(request, pk):
+    try:
+        vendor = Vendor.objects.get(pk=pk)
+    except Vendor.DoesNotExist:
+        return Response({"error": "Vendor not found"}, status=404)
 
-    serializer = VendorSerializer(vendors, many=True)
-    data = serializer.data
+    deal_weight = 100 if vendor.active_deal else 0
+    female_boost = 20 if vendor.is_female_owned else 0
+    hygiene_score = vendor.hygiene_rating * 10
 
-    # Sort by final_score descending
-    sorted_data = sorted(data, key=lambda x: x["final_score"], reverse=True)
+    rank_score = deal_weight + female_boost + hygiene_score
 
     return Response({
-        "success": True,
-        "data": sorted_data
+        "id": vendor.id,
+        "name": vendor.name,
+        "category": vendor.category,
+        "location": vendor.location,
+        "hygiene_rating": vendor.hygiene_rating,
+        "service_rating": vendor.service_rating,
+        "is_female_owned": vendor.is_female_owned,
+        "active_deal": vendor.active_deal,
+        "deal_discount": vendor.deal_discount,
+        "deal_description": vendor.deal_description,
+        "rank_score": rank_score
     })
+
+
+# ---------------------------
+# TOGGLE DEAL
+# ---------------------------
+@api_view(['PUT'])
+def toggle_deal(request, pk):
+    try:
+        vendor = Vendor.objects.get(pk=pk)
+    except Vendor.DoesNotExist:
+        return Response({"error": "Vendor not found"}, status=404)
+
+    vendor.active_deal = not vendor.active_deal
+
+    if vendor.active_deal:
+        vendor.deal_discount = request.data.get("deal_discount", 20)
+        vendor.deal_description = request.data.get("deal_description", "Flash Deal")
+    else:
+        vendor.deal_discount = 0
+        vendor.deal_description = ""
+
+    vendor.save()
+
+    return Response({"message": "Deal updated successfully"})
+
+
+# ---------------------------
+# UPDATE VENDOR PROFILE
+# ---------------------------
+@api_view(['PUT'])
+def update_vendor(request, pk):
+    try:
+        vendor = Vendor.objects.get(pk=pk)
+    except Vendor.DoesNotExist:
+        return Response({"error": "Vendor not found"}, status=404)
+
+    vendor.name = request.data.get("name", vendor.name)
+    vendor.category = request.data.get("category", vendor.category)
+    vendor.location = request.data.get("location", vendor.location)
+    vendor.is_female_owned = request.data.get("is_female_owned", vendor.is_female_owned)
+
+    vendor.save()
+
+    return Response({"message": "Vendor updated successfully"})
