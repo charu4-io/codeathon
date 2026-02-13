@@ -19,6 +19,9 @@ class Vendor(models.Model):
     location = models.CharField(max_length=200)
     phone_number = models.CharField(max_length=15, blank=True)
     description = models.TextField(blank=True)
+    active_deal = models.BooleanField(default=False)
+    deal_discount = models.IntegerField(default=0)
+    deal_description = models.CharField(max_length=200, blank=True)
 
 
     is_female_owned = models.BooleanField(default=False)

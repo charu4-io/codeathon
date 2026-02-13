@@ -28,3 +28,11 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+node_modules/
+frontend/node_modules/
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+backend/db.sqlite3
+.env
