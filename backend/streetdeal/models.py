@@ -1,17 +1,22 @@
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
+from core.models import Vendor
 
 
 class StreetDeal(models.Model):
-    vendor_id = models.IntegerField()  # Temporary until Vendor model ready
+    vendor = models.ForeignKey(
+        Vendor,
+        on_delete=models.CASCADE,
+        related_name="deals"
+    )
 
     discount = models.IntegerField()
     description = models.CharField(max_length=200)
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    expiry_time = models.DateTimeField()
+    expiry_time = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Auto-set expiry to 1 hour if not set
@@ -20,9 +25,9 @@ class StreetDeal(models.Model):
         super().save(*args, **kwargs)
 
     def check_expiry(self):
-        if self.expiry_time < timezone.now():
+        if self.expiry_time and self.expiry_time < timezone.now():
             self.is_active = False
-            self.save()
+            super().save()
 
     def __str__(self):
-        return f"Deal for Vendor {self.vendor_id} - {self.discount}%"
+        return f"{self.vendor.name} - {self.discount}%"
